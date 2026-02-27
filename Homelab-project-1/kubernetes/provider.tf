@@ -6,7 +6,7 @@ provider "kubernetes" {
 
 # Helm provider using the same kubeconfig
 provider "helm" {
-    kubernetes {
+    kubernetes = {
         config_path = var.kubeconfig_path
         config_context = var.kube_context
     }

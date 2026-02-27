@@ -21,3 +21,9 @@ resource "kubernetes_namespace" "security" {
     name = "security"
   }
 }
+
+resource "kubernetes_namespace" "jfrog" {
+  metadata {
+    name = "jfrog"
+  }
+}
