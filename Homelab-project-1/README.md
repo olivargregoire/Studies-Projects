@@ -1,7 +1,10 @@
 # DevOps Project – Local, Secure GitOps Platform (Homelab)
 
 ## Project Objective
-This project sets up a DevOps platform in a local environment, based on Kubernetes and GitOps principles. The goal is to deploy a web application using a CI/CD pipeline, with a bit of traceability of the software supply chain and observability.
+This project sets up a DevOps platform in a local environment, based on Kubernetes and GitOps principles. The goal of my project is to deploy a web application using a CI/CD pipeline, with some traceability of the supply chain and observability.
+
+I used AI to generate this challenge and try to use as less as I could to solve the issues I could face to understand everything. 
+
 The platform is designed to mimic an enterprise‑style DevOps setup, but runs entirely on a local homelab. This project allows myself to familiarize a bit more with : 
 - Infrastructure as Code (IaC)
 - GitOps workflows (Argo CD / Flux)
@@ -13,9 +16,7 @@ The platform is designed to mimic an enterprise‑style DevOps setup, but runs e
 - Observability (logging, metrics, tracing)
 
 ## Project goal: 
-
-LocalCloud Platform, a fictional enterprise, wants to provide its internal teams with a secure, automated, and observable platform for deploying web applications.
-The DevOps team is tasked to:
+In this project I want to have : 
 - Set up a local Kubernetes cluster that mimics a production environment
 - Implement CI/CD pipelines to build, test, scan, and deploy applications
 - Ensure supply chain integrity from code to runtime
