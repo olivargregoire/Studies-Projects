@@ -1,4 +1,4 @@
-This project was part of the Footprinting modules https://academy.hackthebox.com/module/details/112 when they encourage you to try in homelab the various configuration options that can be dangerous. So I deployed a lab for those services (one container = one service) : 
+This project was part of the Footprinting modules https://academy.hackthebox.com/module/details/112 when they encourage you to try in homelab the various configuration options that can be dangerous. So I deployed a lab for those services (one container = one service) and was able to play with the config of each services: 
 
     - FTP : vsftpd
 
