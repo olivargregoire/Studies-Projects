@@ -13,7 +13,7 @@ The user clicks the `/login` button on the client application's web page and it'
 
 ## 2. The client generates and stores some security parameters
 
-Before redirecting the user, the client app generates three strings and temporarily saves them (usually in a session cookie or local cache):
+Before redirecting the user, the client app generates three strings and temporarily saves them (usually in a session cookie or local cache, so the user has it in its browser):
 
 - **state**: An string to avoid CSRF attacks. Basically it allows to correlate who originally started this login flow, and who send their authorization code. Otherwise, without that, an attacker could use social engineering and make someone log in on the attacker account by sending their auth code url - And the client app will have no way to check that this auth code request is not from the same person that initiated it.
 
@@ -25,7 +25,7 @@ Before redirecting the user, the client app generates three strings and temporar
 
 ## 3. Redirect to authorization endpoint
 
-The client application redirects the user's browser to the IdP `/authorize` endpoint. This redirect URL contains a payload of query parameters, typically including: `client_id`, `response_type=code`, `scope=openid`, `redirect_uri`, `state`, and `nonce`. It also contains the PKCE code, a `code_challenge` (hash of `code_verifier`) and the hashing method that has been used.
+The client application redirects the user's browser to the IdP `/authorize` endpoint. This redirect URL contains a payload of query parameters, typically including: `client_id`, `response_type=code`, `scope=openid`, `redirect_uri`, `state`, and `nonce`. It also contains the PKCE code, a `code_challenge` (hash of `code_verifier`) and the hashing method that has been used. 
 
 ### URL parameters
 
@@ -51,7 +51,7 @@ nonce=kj6923Kn9
 
 ## 4. User creds prompt
 
-The browser arrives at the Idp and this guy checks if the user already has an active session. If not, it presents a login interface prompting the user for their credentials (username, password, MFA, etc. depending on the Idp policy).
+The browser arrives at the Idp and this guy checks if the user already has an IdP active session. If not, it presents a login interface prompting the user for their credentials (username, password, MFA, etc. depending on the Idp policy).
 
 ---
 
