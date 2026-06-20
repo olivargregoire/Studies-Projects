@@ -1,18 +1,19 @@
 ![RBAC def example](./RBACdefscheme.svg)
 
 
-RBACManager was a really useful Kubernetes operator that I have been using professionally with dynamic label. I am going here to try to explain its functionning. It works by managing RBAC definition objects and control them via the Kube API by watching any creation, watch, deletion of RBAC definition.
-
-What is a RBACDefinition object? A RBACdefinition is a a custom resource definition allowing to manage on a unified way the Roles and RolesBinding. It allows you to define multiple users, groups, or service accounts and map them to various roles across different namespaces—all within a single YAML file.
-
-An RBACDefinition uses an array called RBACBindings, that mapped essentially groups Subjects (who (which group? user?)) with an RoleBinding (A mapping between a cluster Role and a namespace or a label on a namespace) and/or ClusterRoleBindings (same as RoleBinding, but cluster wide)
+RBACManager was a really useful Kubernetes operator that I have been using professionally with dynamic label. I am going here to try to explain its functionning. It works by managing RBAC definition objects and control them via the Kube API by watching any creation, update, deletion of RBAC definition.
 
 The operator watches on the API Server for few ressources :
 - The RBACDefinition (its custom CRD)
 - The Namespaces (to detect label changes)
 - The Cluster and Role Bindings (to detect drift)
 
-Dès qu'un de ces objets est créé, modifié ou supprimé, l'API Server envoie un event au controller, qui enqueue une reconciliation immédiatement.
+When one of those objects are created/modified, the API server will send an event to the controller, to reconciliate with the current situation. It will then create or delete the right role bindings in the corresponding namespaces 
+
+What is a RBACDefinition object? A RBACdefinition is a a custom resource definition allowing to manage on a unified way the Roles and RolesBinding. It allows you to define multiple users, groups, or service accounts and map them to various roles across different namespaces—all within a single YAML file.
+
+An RBACDefinition uses an array called RBACBindings, that mapped essentially groups Subjects (who (which group? user?)) with an RoleBinding (A mapping between a cluster Role and a namespace or a label on a namespace) and/or ClusterRoleBindings (same as RoleBinding, but cluster wide)
+
 
 ## For the example on the scheme on two teams (one infra team and one dev team) sharing the cluster : 
 
