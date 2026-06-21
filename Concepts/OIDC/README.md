@@ -7,15 +7,15 @@
 
 ## 1. User Initiates Login
 
-The user clicks the `/login` button on the client application's web page and it's gonna trigger the OIDC flow.
+The user clicks the `/login` button on the client application's web page and it's going to trigger the OIDC flow.
 
 ---
 
 ## 2. The client generates and stores some security parameters
 
-Before redirecting the user, the client app generates three strings and temporarily saves them (usually in a session cookie or local cache):
+Before redirecting the user, the client app generates three strings and temporarily saves them (usually in a session cookie or local cache, so the user has it in its browser):
 
-- **state**: An opaque, unguessable string to avoid CSRF attacks. Basically it allows to correlate who originally started this login flow, and who send their authorization code. Otherwise, without that, an attacker could use social engineering and make someone log in on their own account by sending their auth code url - And the client app will have no way to check that this auth code request is not from the same person that initiated it.
+- **state**: An string to avoid CSRF attacks. Basically it allows to correlate who originally started this login flow, and who send their authorization code. Otherwise, without that, an attacker could use social engineering and make someone log in on the attacker account by sending their auth code url - And the client app will have no way to check that this auth code request is not from the same person that initiated it.
 
 - **nonce**: A random string used to prevent Replay Attacks. It will later be embedded in the ID Token by the IdP, allowing the client to verify that the token was minted specifically for this session and hasn't been intercepted and reused. It makes each session unique and an attacker won't be able to replay an old ID Token.
 
@@ -25,7 +25,7 @@ Before redirecting the user, the client app generates three strings and temporar
 
 ## 3. Redirect to authorization endpoint
 
-The client application redirects the user's browser to the IdP `/authorize` endpoint. This redirect URL contains a payload of query parameters, typically including: `client_id`, `response_type=code`, `scope=openid`, `redirect_uri`, `state`, and `nonce`. It also contains a `code_challenge` (hash of `code_verifier`) and the hashing method that has been used.
+The client application redirects the user's browser to the IdP `/authorize` endpoint. This redirect URL contains a payload of query parameters, typically including: `client_id`, `response_type=code`, `scope=openid`, `redirect_uri`, `state`, and `nonce`. It also contains the PKCE code, a `code_challenge` (hash of `code_verifier`) and the hashing method that has been used. 
 
 ### URL parameters
 
@@ -51,7 +51,7 @@ nonce=kj6923Kn9
 
 ## 4. User creds prompt
 
-The browser arrives at the Idp and this guy checks if the user already has an active session. If not, it presents a login interface prompting the user for their credentials (username, password, MFA, etc. depending on the Idp policy).
+The browser arrives at the Idp and this guy checks if the user already has an IdP active session. If not, it presents a login interface prompting the user for their credentials (username, password, MFA, etc. depending on the Idp policy).
 
 ---
 
@@ -121,10 +121,10 @@ The client application receives the tokens and must validate the ID Token before
 
 - **Nonce (`nonce`)**: That the nonce inside the token matches the nonce saved in Step 2, ensuring it is not a replayed token.
 
-After beeing validated, the client extracts the user identifiers like the `sub` (Subject) and requested scopes (e.g., `email`). from the ID token. Based on the `sub`, the application will either identify and log in an existing user account in its own database or either create a new user account (JIT provisioning).
+After beeing validated, the client extracts the user identifiers like the `sub` (Subject) and requested scopes (e.g., `email`). from the ID token. Based on the `sub`, the application will either identify and log in an existing user account in its own database or either create a new user account (JIT provisioning). It can also extracts custom attribute, such as the role or some groups the user belongs to.
 
 ---
 ![OIDC Flow](./auth-flow.svg)
 # Establish Application Session
 
-Now that the user is fully authenticated, the client application issues its own local application session. It typically sets a secure, encrypted session cookie in the user browser.
+Now that the user is fully authenticated, the client application issues its own local application session (for example secured and encrypted cookie)

@@ -6,9 +6,9 @@ Welcome to my `Concept` folder! This is where I put all the notes, summaries, an
 ## 📚 What's in here?
 
 ### 🔐 Security & Auth
-*   **SAML 2.0:** Figuring out how SAML actually works. I mapped out the trust flow between Identity Providers (IdP) and Service Providers (SP) and looked at how XML assertions are passed around. It was interesting also to look at the little parameters and why they are needed on a security point of view. 
+*   **SAML 2.0:** Figuring out how SAML actually works. 
 
-*   **OIDC** Figuring out how OIDC actually works. I mapped out the trust flow between Identity Providers (IdP) and Service Providers (SP) and looked at how XML assertions are passed around. Same, there is a lot of few interesting parameters that I wanted to understand
+*   **OIDC** Figuring out how OIDC actually works.
 
 *   **TLS 1.3:** A look at how the web stays secure. I focused on TLS 1.3, and it was pretty useful to understand cryptographically how everything was garanteed.
 
