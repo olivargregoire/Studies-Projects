@@ -1,0 +1,11 @@
+# kubernetes/jfrog/values.yaml
+artifactory:
+  service:
+    type: NodePort
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+postgresql:
+  enabled: true
+  
