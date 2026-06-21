@@ -5,7 +5,7 @@ FROM postgres:16-alpine
 # Note: It's better to do this in docker-compose for security
 ENV POSTGRES_DB=my_database
 ENV POSTGRES_USER=greg
-ENV POSTGRES_PASSWORD=password123
+ENV POSTGRES_PASSWORD=greg
 
 # 3. (Optional) Add initialization scripts
 # Any .sql or .sh script placed in this folder is executed 
