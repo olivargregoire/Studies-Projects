@@ -46,36 +46,6 @@ The important idea that I wanted to put in place:  **only nginx is exposed to my
   first start it runs `init.sql` which creates some fake databases
   (`inventory`, `billing`, `analytics`, `staging`) so I have something to list.
 
-## Networking (the part I spent the most time on)
-
-First of all, I have been practicing docker networking thanks to iximiuz and all his lab, especially the one where you have to build container networking from scratch: 
-- Tutorial https://labs.iximiuz.com/tutorials/container-networking-from-scratch
-- Final lab https://labs.iximiuz.com/challenges/reproduce-docker-bridge-network
-
-Basically when spawning a container, the container runtime creates its own network namespace with its own network stack. 
-
-This netns only has a loopback interface and can't reach anything, or be reached. To connect it to the host then, the linux kernel creates a **veth pair**: a virtual cable with two ends. One end stays in the host (root namespace), the other goes inside the container's namespace and gets an IP. That's enough for one container.
-
-The problem starts when we have more than one containers in the same subnet: if we give both host-side ends an IP in the same network (so they can communicate) `172.18.0.0/16`, the host's routing table ends up with two routes (for the two veth on host) for the same network → they clash and connectivity breaks.
-
- The fix is to use a **Linux bridge** (`br0`), which is basically a virtual switch working at L2 level (Ethernet). We then attach both veth host-ends to the bridge, leave them without IPs, and the containers talk to each other through the switch regardless of routing. Then we obtain network basic driver from Docker. I just have to route all my traffic for any container to go through the bridge. 
-
-To reach the host, we need to give the **bridge itself an IP** (`172.18.0.1`) — it
-becomes the containers' default gateway. To reach the **internet**, two more
-things are needed:
-- `ip_forward = 1` so the host acts as a router,
-- a **NAT / masquerade** iptables rule, so outbound packets get the host's
-  public IP as source (private container IPs aren't routable on the internet).
-
-And to let the the container being accesible from the internet (not the case here and on the scheme), we would have to publish a port: an
-iptables `DNAT` rule forwards `host_ip:port` to `container_ip:port`. That's
-literally what `ports: "80:80"` does under the hood.
-
-![Container Networking with two containers](./container_basic_networking.svg)
-
-
-So a "Docker network" = a bridge + a subnet + the iptables rules around it. I used IPAM that is a Docker subsystem distributing and following the IP adress for the network. It defines what subnet is used, what is the network gateway and what IP we should give to each veth in each container joining a specific network. 
-
 ## The nginx routing
 
 This took me much more time than it should have, so I'm writing it down. The config I ended up with :
@@ -112,6 +82,77 @@ Other stupid errors I did bugs I hit:
 - Wrong DB password in the app → the `/db` route returns a `500`. The real
   password lives in `db/postgres/Dockerfile`.
 
+
+## Networking (the part I really wanted to explore)
+
+First of all, I have been practicing docker networking thanks to iximiuz and all his lab, especially the one where you have to build container networking from scratch: 
+- Tutorial https://labs.iximiuz.com/tutorials/container-networking-from-scratch
+- Final lab https://labs.iximiuz.com/challenges/reproduce-docker-bridge-network
+
+Basically when spawning a container, the container runtime creates its own network namespace with its own network stack. 
+
+This netns only has a loopback interface and can't reach anything, or be reached. To connect it to the host then, the linux kernel creates a **veth pair**: a virtual cable with two ends. One end stays in the host (root namespace), the other goes inside the container's namespace and gets an IP. That's enough for one container.
+
+The problem starts when we have more than one containers in the same subnet: if we give both host-side ends an IP in the same network (so they can communicate) `172.18.0.0/16`, the host's routing table ends up with two routes (for the two veth on host) for the same network → they clash and connectivity breaks.
+
+ The fix is to use a **Linux bridge** (`br0`), which is basically a virtual switch working at L2 level (Ethernet). We then attach both veth host-ends to the bridge, leave them without IPs, and the containers talk to each other through the switch regardless of routing. Then we obtain network basic driver from Docker. I just have to route all my traffic for any container to go through the bridge. 
+
+To reach the host, we need to give the **bridge itself an IP** (`172.18.0.1`) — it
+becomes the containers' default gateway. To reach the **internet**, two more
+things are needed:
+- `ip_forward = 1` so the host acts as a router,
+- a **NAT / masquerade** iptables rule, so outbound packets get the host's
+  public IP as source (private container IPs aren't routable on the internet).
+
+And to let the the container being accesible from the internet (not the case here and on the scheme), we would have to publish a port: an
+iptables `DNAT` rule forwards `host_ip:port` to `container_ip:port`. That's
+literally what `ports: "80:80"` does under the hood.
+
+![Container Networking with two containers](./container_basic_networking.svg)
+
+For my project, I am going to need several network to have an isolation between the reverse proxy, the backend, and the db.
+
+A "Docker network" = a bridge + a subnet + the iptables rules around it. I used IPAM that is a Docker subsystem distributing and following the IP address for the network. It defines what subnet is used, what is the network gateway and what IP we should give to each veth in each container joining a specific network.
+
+I used 3 different networks, one per "trust zone":
+```
+networks:
+  frontend:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24
+  backend:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 192.168.2.0/24
+  dbs:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 192.168.3.0/24
+```
+
+Each network is a separate bridge, so I end up with **3 bridges** and they can only talk to each other if they are in the same network.
+
+My intended zones are:
+
+- **`frontend`** — the only network *without* `internal: true`, so it's the only one with outside access (paired with `ports: "80:80"`). Only nginx lives here.
+
+- **`backend`** (`internal: true` : no SNAT configured) : that's where nginx forwards traffic
+  to `app1` and `app2`. The apps can't call out to the internet from here.
+
+- **`dbs`** (`internal: true`) — meant to be the database-only zone, so that
+  **only the apps** can reach Postgres and the proxy cannot talk to it directly.
+
+The flow I'm aiming for is a clean chain: `internet → nginx → apps → db`, where
+each layer only sees its direct neighbour.
+
+
+
 ## How to run it
 
 ```bash
@@ -136,27 +177,3 @@ If I change `init.sql`, I have to recreate the volume so it runs again:
 docker compose down -v         # the -v drops the volume
 docker compose up --build -d
 ```
-
-## TODO / things I know aren't perfect yet
-
-- [ ] Align app1 and app2 on the **same** routing strategy (right now app1 keeps
-      the `/app1` prefix in its routes, app2 doesn't — confusing).
-- [ ] The `dbs` network is currently useless (only postgres is on it). Real
-      segmentation would be: put app1/app2 on `dbs`, take postgres **off**
-      `backend`, so the proxy can't reach the DB directly.
-- [ ] Postgres exposes `5432` to my machine — convenient for a SQL client, but
-      I should remove it for a cleaner/safer setup.
-- [ ] Move the DB credentials out of the Dockerfile and into the `.env` /
-      compose `environment:` (it's bad practice to hardcode the password).
-- [ ] `server_name gregwebsite.com` should probably be `localhost` for local
-      testing.
-
-## What I learned overall
-
-- How Docker Compose wires multiple containers together.
-- The difference between `networks` and `ports`.
-- How a reverse proxy works and why you'd use one.
-- Docker's internal DNS (service names).
-- Connection pooling with `pg` (a `Pool` keeps a few DB connections open and
-  reuses them instead of reconnecting every request).
-- How to debug containers with `docker compose logs`.

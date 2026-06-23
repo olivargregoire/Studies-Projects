@@ -14,20 +14,19 @@ services:
       dockerfile: Dockerfile
     networks:
       - backend
+      - dbs
   app2:
     build:
       context: ./app2
       dockerfile: Dockerfile
     networks:
       - backend
+      - dbs
   postgres:
     build:
       context: ./db/postgres
       dockerfile: Dockerfile
-    ports:
-      - "5432:5432"
     networks:
-      - backend
       - dbs
 networks:
   frontend:
