@@ -47,6 +47,8 @@ code_challenge_method = SHA256
 nonce=kj6923Kn9
 ```
 
+The `client_id` is sent here (it's public, not a secret) so the IdP knows *which* app is asking and can validate the `redirect_uri` against the ones pre-registered for that app — this is what stops an attacker from redirecting the code elsewhere.
+
 ---
 
 ## 4. User creds prompt
@@ -57,7 +59,7 @@ The browser arrives at the Idp and this guy checks if the user already has an Id
 
 ## 5. Credential verification
 
-The user submits their credentials. The IdP verifies them and evaluate any conditional access policies.
+The user submits their credentials. The IdP verifies them and evaluate any conditional access policies. It also checks here that the user is **assigned to the app** (the `client_id` from Step 3): valid credentials are not enough, an unassigned user is rejected before any code is issued.
 
 ---
 
@@ -84,6 +86,8 @@ If they do not match (or the state is missing), it would mean that it comes from
 ## 9. Token exchange request
 
 The client application then contacts the IdP directly with a HTTP POST request to the `/token` endpoint. It sends the `code`, its `client_id`, its `client_secret` (or other client authentication method), and the `redirect_uri`. The IdP will use this to verify the client and exchange the code for the actual ID Token and Access Token.
+
+The `client_secret` is the backend proving *"I really am this `client_id`"* — that's what makes a stolen code useless without it. Public clients (SPA/mobile) that can't store a secret rely on PKCE instead.
 
 ---
 
