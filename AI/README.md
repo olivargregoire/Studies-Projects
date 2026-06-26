@@ -3,8 +3,7 @@
 This folder gathers the AI projects I did during my studies and in my free time.
 
 Most of them come from my exchange in Madrid (**UPM — ETSIT**), where I built my
-fundamentals in Machine Learning and Deep Learning (especially CNNs). Each subfolder
-is a self-contained project.
+fundamentals in Machine Learning and Deep Learning (especially CNNs).
 
 ## Projects
 
