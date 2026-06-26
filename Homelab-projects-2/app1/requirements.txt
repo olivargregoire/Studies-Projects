@@ -1,3 +1,0 @@
-flask
-gunicorn
-# Ajoute tes autres librairies ici (pandas, requests, etc.)

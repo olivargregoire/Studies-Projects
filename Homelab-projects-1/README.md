@@ -26,7 +26,7 @@ Homelab-projects-1/
 ## How it works (the architecture)
 
 
-The important idea that I wanted to put in place:  **only nginx is exposed to my machine** (`ports: "80:80"`). The apps and the database are NOT reachable directly from outside, and you have to go through this nginx to reach apps. Moreover only the apps have access to the database. There is no direct access between the db and nginx proxy, this goes through the app.
+The important thing that I wanted to put in place:  **only nginx is exposed to my machine** (`ports: "80:80"`). The apps and the database are not reachable directly from outside, and you have to go through this nginx to reach apps. Moreover, only the apps have access to the database. There is no direct access between the db and nginx proxy, this goes through the app.
 
 ### The services
 
@@ -63,7 +63,7 @@ The key thing: the trailing slash on `location /app1/` **and** on
 That's why my apps only define `/db` and `/health` (no `/app1` prefix in the
 code) — nginx already stripped it. app1 and app2 work exactly the same way.
 
-What I learned while getting there (the mistakes I made first):
+few  avoidable mistakes I made first):
 
 - `proxy_pass http://app1:3000;` (no trailing slash) forwards the **full** URL,
   so app1 received `/app1/db` and my `if (req.url === '/db')` never matched.
