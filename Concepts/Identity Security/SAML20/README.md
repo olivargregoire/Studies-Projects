@@ -7,9 +7,9 @@
 
 
 GET sp/protected/myresource
-The user hits a protected URL on the Service Provider (SP) (could be when he tries to login, but i chose that as an example for my scheme). The SP sees there is no valid local session (no cookie, or it's expired) and has been configured to delegate authentication to the IdP. It's gonna trigger the SAML flow.
+The user hits a protected URL on the Service Provider (SP) (could be when he tries to login, but i chose that as an example for my scheme). The SP sees there is no valid local session (no cookie, or it's expired) and has been configured to delegate authentication to the IdP. It's going to trigger the SAML flow.
 
-> Note: in SAML the trust between SP and IdP is set up before any login happens, by exchanging metadata XML files. The SP already knows the IdP SSO URL and its public signing certificate, and the IdP already knows the SP `entityID` and the allowed ACS URLs. There is no `client_secret` like in OIDC, the trust is done through the certificates.
+> In SAML the trust between SP and IdP is set up before any login happens, by exchanging metadata XML files. The SP already knows the IdP SSO URL and its public signing certificate, and the IdP already knows the SP `entityID` and the allowed ACS URLs. There is no `client_secret` like in OIDC, the trust is done through the certificates.
 
 ---
 
@@ -17,7 +17,7 @@ The user hits a protected URL on the Service Provider (SP) (could be when he tri
 
 Before redirecting the user, the SP builds an XML `<samlp:AuthnRequest>` and saves a couple of values server-side (usually in a session cookie) so it can correlate the future response:
 
-- **ID**: a unique and un-bruteforceable identifier for this specific request. The IdP MUST echo it back in the response's `InResponseTo` attribute. The SP stores it and rejects any response that doesn't reference an `ID` it actually issued. Same idea as OIDC's `nonce`: it prevents replay attacks and unsolicited responses.
+- **ID**: a unique and un-bruteforceable identifier for this specific request. The IdP must echo it back in the response's `InResponseTo` attribute. The SP stores it and rejects any response that doesn't reference an `ID` it actually issued. It is basically the same idea as OIDC's `nonce`: it prevents replay attacks and unsolicited responses.
 
 - **RelayState**: an opaque string the SP wants back untouched. Two typical uses: (1) remembering the original deep link (here `sp/protected/myresource`) so the SP knows where to send the user once auth is done, and (2) a CSRF-style correlation token. Same idea as OIDC's `state`.
 
