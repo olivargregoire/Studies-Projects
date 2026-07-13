@@ -1,6 +1,5 @@
 # Skills Assessment — Broken Authentication (full write-up)
 
-**Target** (IP rotates between resets): `X.X.X.X:PORT` → `X.X.X.X:PORT` → `X.X.X.X:PORT`
 
 ---
 

@@ -1,4 +1,4 @@
-Personal Cheatsheet over the Broken Authentication module from https://academy.hackthebox.com/app/module/80
+Personal Cheatsheet over the Broken Authentication module from https://academy.hackthebox.com/app/module/80 (I used AI to sum up some part)
 
 The module main takeaways are: 
 - Identifying weaknesses in authentication implementations
