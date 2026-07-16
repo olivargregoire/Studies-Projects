@@ -1,4 +1,4 @@
-Personal Cheatsheet over the Attacking Authentication Mechanisms module from https://academy.hackthebox.com/
+Personal Cheatsheet over the Attacking Authentication Mechanisms module from https://academy.hackthebox.com/ (I used AI to sum up some part)
 
 Focus of this part: JWTs — what they are, and how to forge/tamper them to escalate privileges.
 
