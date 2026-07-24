@@ -20,8 +20,8 @@ find your way around (I basically write things down to actually understand them)
   down: TLS 1.3 (the full handshake, step by step), and GitHub Fine-grained PATs
   vs GitHub Apps. Has its own README with more detail.
 - **`AI/`** — my machine learning / AI experiments: a facial recognition deep
-  learning project, heart disease detection with ML, and CodeCrafter (my attempt
-  at building my own Claude-Code-like tool).
+  learning project, heart disease detection with ML, and AI agent (my attempt
+  at building my own Claude-Code-like tool, and to secure it).
 - **`CPTS/`** — notes and service enumeration stuff from my CPTS pentesting prep.
 - **`Mini Local App Architecure/`** — a small hands-on multi-container setup
   (nginx + two apps + a db) to play with local app architecture.
