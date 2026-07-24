@@ -20,3 +20,8 @@ is a self-contained project.
 
 - **[Machine Learning report](./PRDL/PRDL_MACHINE_LEARNING_REPORT_OLIVAR.pdf)**
 - **[Deep Learning report](./PRDL/PRDL_DEEP_LEARNING_REPORT_OLIVAR.pdf)**
+
+### [PRDL/](./PRDL) — written reports
+
+- **[Machine Learning report](./PRDL/PRDL_MACHINE_LEARNING_REPORT_OLIVAR.pdf)**
+- **[Deep Learning report](./PRDL/PRDL_DEEP_LEARNING_REPORT_OLIVAR.pdf)**
